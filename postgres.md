@@ -1,6 +1,6 @@
 # Postgres
 
-This Documentation is regarding deployment of Postgres Database using Kustomize in our Kubernetes cluster using the GitHub repository mentioned below.\n
+This Documentation is regarding deployment of High Availability Postgres Database using Kustomize in Kubernetes EKS cluster using the GitHub repository mentioned below.
 
 Reference links:-
 
@@ -39,7 +39,7 @@ apiVersion: v1
  metadata:
    name: pgo
 +  annotations:
-+    eks.amazonaws.com/role-arn: arn:aws:iam::335044911175:role/AmazonEKS_EBS_CSI_DriverRole_Mumbai
++    eks.amazonaws.com/role-arn: arn:aws:iam::<aws-account-id>:role/AmazonEKS_EBS_CSI_DriverRole
 ```
 
 **Explanation:** Replace the ARN value with the EBS role ARN you created while enabling the EBS addon for the Kubernetes cluster.
@@ -60,7 +60,7 @@ cd ../../../postgres/
 piVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: blusapphire  # Changed from 'hippo' to 'blusapphire'
+  name: <cluster-name>  # Change name as per your choice
 spec:
   postgresVersion: 17
   users:
@@ -132,9 +132,9 @@ Expected Output for `kubectl get pods -n postgres-operator`:
 
 NAME                                              READY   STATUS    RESTARTS   AGE
 
-blusapphire-instance1-f4h9-0       4/4     Running            0               1m
+<cluster-name>-instance1-f4h9-0       4/4     Running            0               1m
 
-blusapphire-repo-host-0                2/2     Running            0                1m
+<cluster-name>-repo-host-0                2/2     Running            0                1m
 
 pgo-84c88fcf85-lwpgq                  1/1     Running             0               4m
 
@@ -145,14 +145,14 @@ pgo-84c88fcf85-lwpgq                  1/1     Running             0             
 To access the Postgres database, retrieve the password for the default `postgres` user using the following command:
 
 ```javascript
-kubectl get secret blusapphire-pguser-postgres -n postgres-operator -o jsonpath="{.data.password}" | base64 --decode
+kubectl get secret <cluster-name>-pguser-postgres -n postgres-operator -o jsonpath="{.data.password}" | base64 --decode
 ```
 
 
 
 8. ### **Connect to the Postgres Database:**
 
-After installing psql locally, use the following command to connect to the database via port-forwarding to the blusapphire-instance1-\* pod or via LoadBalancer (if applicable):
+After installing psql locally, use the following command to connect to the database via port-forwarding to the <cluster-name>-instance1-\* pod or via LoadBalancer (if applicable):
 
 ```javascript
 psql -h localhost -U postgres
@@ -160,27 +160,27 @@ psql -h localhost -U postgres
 
 
 
-9. ### **Create the `blusapphire` User:**
+9. ### **Create User:**
 
-By default, the `blusapphire` user does not exist in the Postgres database. Create the user with the following command:
+By default only user exist in the Postgres database. Create the user with the following command:
 
 ```javascript
-CREATE USER blusapphire WITH PASSWORD "passwordhere';
+CREATE USER user WITH PASSWORD "passwordhere';
 ```
 
 
 
-10. ### **Create Database and Grant Database Privileges to the `blusapphire` User:**
+10. ### **Create Database and Grant Database Privileges to the User:**
 
-The `blusapphire` user will not have the privilege to create databases by default. To create a database and grant access to blusapphire, log in as `postgres` and run:
+The user will not have the privilege to create databases by default. To create a database and grant access to user, log in as `postgres` and run:
 
 ```javascript
-CREATE DATABASE mydatabase OWNER blusapphire;
+CREATE DATABASE mydatabase OWNER user;
 ```
 
 
 ```javascript
-GRANT ALL PRIVILEGES ON DATABASE mydatabase TO blusapphire;
+GRANT ALL PRIVILEGES ON DATABASE mydatabase TO user;
 ```
 
 
@@ -201,7 +201,7 @@ metadata:
 spec:
   type: LoadBalancer # Use LoadBalancer or NodePort if external access is required
   selector:
-    postgres-operator.crunchydata.com/patroni: blusapphire-ha
+    postgres-operator.crunchydata.com/patroni: <cluster-name>-ha
   ports:
     - protocol: TCP
       port: 5432
